@@ -8,9 +8,17 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import fs from 'fs';
+import { evaluateThreat } from './services/evaluator.js';
+import { getResponse } from './services/responder.js';
 
 dotenv.config();
+
+const USE_MOCK_MODE = !process.env.GROQ_API_KEY;
+
+if (USE_MOCK_MODE) {
+  console.log('⚠️  Running in MOCK MODE - No GROQ_API_KEY found');
+  console.log('   Add GROQ_API_KEY to .env file to enable real LLM integration');
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,6 +60,7 @@ app.use(limiter);
 
 app.use(express.json({ limit: '10mb' }));
 
+// Legacy mock threat detection (fallback mode)
 const threatPatterns = [
   /ignore\s+previous\s+instructions/gi,
   /ignore\s+the\s+above/gi,
@@ -70,15 +79,7 @@ const threatPatterns = [
   /you\s+are\s+now/gi
 ];
 
-let stats = {
-  totalRequests: 0,
-  blockedRequests: 0,
-  allowedRequests: 0
-};
-
-const securityEvents = [];
-
-function evaluateThreat(input) {
+function evaluateThreatMock(input) {
   const normalizedInput = input.toLowerCase();
   
   for (const pattern of threatPatterns) {
@@ -88,7 +89,10 @@ function evaluateThreat(input) {
         threat: true,
         reason: `Detected pattern: "${match[0]}"`,
         severity: 'high',
-        pattern: pattern.toString()
+        confidence: 0.9,
+        attack_type: 'prompt_injection',
+        pattern: pattern.toString(),
+        mock: true
       };
     }
   }
@@ -98,14 +102,19 @@ function evaluateThreat(input) {
       threat: true,
       reason: 'Input exceeds maximum allowed length',
       severity: 'medium',
-      pattern: 'length_check'
+      confidence: 1.0,
+      attack_type: 'length_check',
+      mock: true
     };
   }
   
   return {
     threat: false,
     reason: 'No threats detected',
-    severity: 'none'
+    severity: 'none',
+    confidence: 1.0,
+    attack_type: 'none',
+    mock: true
   };
 }
 
@@ -126,7 +135,7 @@ function logSecurityEvent(event) {
 }
 
 app.post('/api/chat', async (req, res) => {
-  const { message, session_id } = req.body;
+  const { message, session_id, conversation_history } = req.body;
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   stats.totalRequests++;
@@ -139,7 +148,27 @@ app.post('/api/chat', async (req, res) => {
     });
   }
   
-  const evaluation = evaluateThreat(message);
+  // Phase 2: Use real LLM evaluator
+  let evaluation;
+  try {
+    if (USE_MOCK_MODE) {
+      console.log('Using mock evaluator for request:', requestId);
+      evaluation = evaluateThreatMock(message);
+    } else {
+      console.log('Using LLM evaluator for request:', requestId);
+      evaluation = await evaluateThreat(message);
+    }
+  } catch (error) {
+    console.error('Evaluation error:', error);
+    evaluation = {
+      threat: true,
+      reason: 'Evaluation system error - blocking for safety',
+      severity: 'high',
+      confidence: 1.0,
+      attack_type: 'system_error',
+      fallback: true
+    };
+  }
   
   if (evaluation.threat) {
     stats.blockedRequests++;
@@ -152,10 +181,11 @@ app.post('/api/chat', async (req, res) => {
       request_id: requestId,
       user_input: message,
       user_input_preview: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
-      threat_classification: 'prompt_injection',
-      matched_pattern: evaluation.pattern,
+      threat_classification: evaluation.attack_type || 'prompt_injection',
+      confidence: evaluation.confidence,
       evaluator_reason: evaluation.reason,
-      action_taken: 'blocked'
+      action_taken: 'blocked',
+      mock_mode: USE_MOCK_MODE || evaluation.mock || false
     });
     
     io.emit('stats_update', stats);
@@ -166,6 +196,8 @@ app.post('/api/chat', async (req, res) => {
       threat: true,
       reason: evaluation.reason,
       severity: evaluation.severity,
+      confidence: evaluation.confidence,
+      attack_type: evaluation.attack_type,
       request_id: requestId,
       timestamp: new Date().toISOString()
     });
@@ -181,30 +213,52 @@ app.post('/api/chat', async (req, res) => {
     request_id: requestId,
     user_input_preview: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
     threat_classification: 'none',
+    confidence: evaluation.confidence,
     action_taken: 'forwarded_to_responder'
   });
   
-  const mockResponses = [
-    "I understand your request. Here's what I can help you with...",
-    "That's an interesting question. Let me think about it...",
-    "I can certainly assist with that. Here's my response...",
-    "Thanks for reaching out. Here's what I found...",
-    "I'd be happy to help. Here's my take on that..."
-  ];
-  
-  const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-  
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Phase 2: Get response from Responder LLM (or mock)
+  let aiResponse;
+  try {
+    if (USE_MOCK_MODE) {
+      // Mock response for testing
+      const mockResponses = [
+        "I understand your request. Here's what I can help you with...",
+        "That's an interesting question. Let me think about it...",
+        "I can certainly assist with that. Here's my response...",
+        "Thanks for reaching out. Here's what I found...",
+        "I'd be happy to help. Here's my take on that..."
+      ];
+      aiResponse = {
+        success: true,
+        response: mockResponses[Math.floor(Math.random() * mockResponses.length)],
+        mock: true
+      };
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } else {
+      // Real LLM response
+      aiResponse = await getResponse(message, conversation_history || []);
+    }
+  } catch (error) {
+    console.error('Responder error:', error);
+    aiResponse = {
+      success: false,
+      response: 'I apologize, but I encountered an error generating a response. Please try again.',
+      error: error.message
+    };
+  }
   
   io.emit('stats_update', stats);
   
   res.json({
     success: true,
-    response: mockResponse,
+    response: aiResponse.response,
     evaluated: true,
     threat: false,
+    confidence: evaluation.confidence,
     request_id: requestId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    mock_mode: aiResponse.mock || false
   });
 });
 
@@ -265,4 +319,5 @@ httpServer.listen(PORT, () => {
   console.log(`🛡️  Prompt Firewall Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔒 Security logs: ./security_audit.log`);
+  console.log(`🤖 Mode: ${USE_MOCK_MODE ? 'MOCK (add GROQ_API_KEY for real LLM)' : 'LIVE (Dual-LLM Architecture)'}`);
 });
