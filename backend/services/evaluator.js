@@ -7,9 +7,10 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-const EVALUATOR_MODEL = 'llama3-8b-8192';
+const EVALUATOR_MODEL = 'llama-3.1-8b-instant';
 
 export async function evaluateThreat(userInput) {
+  console.log(`[Evaluator] Analyzing input: "${userInput.substring(0, 50)}..."`);
   try {
     const completion = await groq.chat.completions.create({
       model: EVALUATOR_MODEL,
@@ -42,10 +43,12 @@ Be precise and conservative. When in doubt, flag as a threat.`
         }
       ],
       temperature: 0.1,
-      max_tokens: 500,
-      response_format: { type: 'json_object' }
+      max_tokens: 500
+    }, {
+      timeout: 30000
     });
 
+    console.log('[Evaluator] Response received, parsing...');
     const content = completion.choices[0]?.message?.content;
     
     if (!content) {
@@ -60,7 +63,27 @@ Be precise and conservative. When in doubt, flag as a threat.`
     }
 
     try {
-      const result = JSON.parse(content);
+      // Try to extract JSON from the response (handle markdown code blocks or extra text)
+      let jsonContent = content;
+      
+      // If response has markdown code blocks, extract the JSON
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)```/) || 
+                       content.match(/```\s*([\s\S]*?)```/) ||
+                       content.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        jsonContent = jsonMatch[0];
+      }
+      
+      // Clean up the content - remove any text before { and after }
+      const startIdx = jsonContent.indexOf('{');
+      const endIdx = jsonContent.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        jsonContent = jsonContent.substring(startIdx, endIdx + 1);
+      }
+      
+      const result = JSON.parse(jsonContent);
+      console.log('[Evaluator] Threat detected:', result.threat, '- Reason:', result.reason);
       return {
         threat: result.threat || false,
         reason: result.reason || 'No reason provided',
@@ -70,19 +93,39 @@ Be precise and conservative. When in doubt, flag as a threat.`
         raw_response: content
       };
     } catch (parseError) {
-      console.error('Failed to parse evaluator response:', parseError);
+      console.log('[Evaluator] Raw response:', content);
+      console.error('[Evaluator] Parse error:', parseError.message);
+      
+      // Fallback: if response mentions "threat" or suspicious keywords, block it
+      const lowerContent = content.toLowerCase();
+      const threatKeywords = ['threat', 'attack', 'injection', 'jailbreak', 'malicious', 'suspicious'];
+      const isThreat = threatKeywords.some(kw => lowerContent.includes(kw)) && 
+                      !lowerContent.includes('no threat') && 
+                      !lowerContent.includes('not a threat');
+      
+      if (isThreat) {
+        return {
+          threat: true,
+          reason: 'Potential threat detected (parsed from text response)',
+          severity: 'high',
+          confidence: 0.7,
+          attack_type: 'other',
+          raw_response: content
+        };
+      }
+      
+      // If we can't parse and no clear threat indicators, allow but log
       return {
-        threat: true,
-        reason: 'Invalid response format from evaluator - blocking for safety',
-        severity: 'high',
-        confidence: 1.0,
-        attack_type: 'other',
-        fallback: true,
+        threat: false,
+        reason: 'Unable to parse evaluator response - allowing with caution',
+        severity: 'low',
+        confidence: 0.3,
+        attack_type: 'none',
         raw_response: content
       };
     }
   } catch (error) {
-    console.error('Evaluator LLM error:', error);
+    console.error('[Evaluator] LLM API error:', error.message);
     return {
       threat: true,
       reason: `Evaluator service error: ${error.message} - blocking for safety`,

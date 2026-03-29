@@ -46,6 +46,14 @@ const logger = winston.createLogger({
   ]
 });
 
+let stats = {
+  totalRequests: 0,
+  blockedRequests: 0,
+  allowedRequests: 0
+};
+
+const securityEvents = [];
+
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173"
@@ -138,37 +146,44 @@ app.post('/api/chat', async (req, res) => {
   const { message, session_id, conversation_history } = req.body;
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  stats.totalRequests++;
+  console.log(`[Server] Received chat request: ${requestId}`);
+  console.log(`[Server] Message: "${message?.substring(0, 50)}..."`);
   
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({
-      success: false,
-      error: 'Message is required',
-      request_id: requestId
-    });
-  }
-  
-  // Phase 2: Use real LLM evaluator
-  let evaluation;
   try {
-    if (USE_MOCK_MODE) {
-      console.log('Using mock evaluator for request:', requestId);
-      evaluation = evaluateThreatMock(message);
-    } else {
-      console.log('Using LLM evaluator for request:', requestId);
-      evaluation = await evaluateThreat(message);
+    stats.totalRequests++;
+    
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is required',
+        request_id: requestId
+      });
     }
-  } catch (error) {
-    console.error('Evaluation error:', error);
-    evaluation = {
-      threat: true,
-      reason: 'Evaluation system error - blocking for safety',
-      severity: 'high',
-      confidence: 1.0,
-      attack_type: 'system_error',
-      fallback: true
-    };
-  }
+    
+    console.log(`[Server] Starting evaluation for: ${requestId}`);
+    
+    // Phase 2: Use real LLM evaluator
+    let evaluation;
+    try {
+      if (USE_MOCK_MODE) {
+        console.log('[Server] Using mock evaluator');
+        evaluation = evaluateThreatMock(message);
+      } else {
+        console.log('[Server] Calling LLM evaluator...');
+        evaluation = await evaluateThreat(message);
+        console.log('[Server] Evaluator result:', evaluation);
+      }
+    } catch (evalError) {
+      console.error('[Server] Evaluation error:', evalError.message);
+      evaluation = {
+        threat: true,
+        reason: 'Evaluation system error - blocking for safety',
+        severity: 'high',
+        confidence: 1.0,
+        attack_type: 'system_error',
+        fallback: true
+      };
+    }
   
   if (evaluation.threat) {
     stats.blockedRequests++;
@@ -260,6 +275,21 @@ app.post('/api/chat', async (req, res) => {
     timestamp: new Date().toISOString(),
     mock_mode: aiResponse.mock || false
   });
+  } catch (error) {
+    console.error('[Server] Unhandled error in chat endpoint:', error.message);
+    console.error('[Server] Error stack:', error.stack);
+    
+    // Write error to file for debugging
+    const fs = await import('fs');
+    const errorLog = `[${new Date().toISOString()}] Error: ${error.message}\nStack: ${error.stack}\n\n`;
+    fs.appendFileSync('error.log', errorLog);
+    
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error: ' + error.message,
+      request_id: requestId
+    });
+  }
 });
 
 app.get('/api/logs', (req, res) => {

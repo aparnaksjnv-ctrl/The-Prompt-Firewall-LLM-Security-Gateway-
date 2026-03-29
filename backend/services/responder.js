@@ -7,7 +7,7 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-const RESPONDER_MODEL = 'llama3-70b-8192';
+const RESPONDER_MODEL = 'llama-3.3-70b-versatile';
 
 export async function getResponse(userInput, conversationHistory = []) {
   try {
