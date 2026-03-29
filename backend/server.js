@@ -8,8 +8,10 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import crypto from 'crypto';
 import { evaluateThreat } from './services/evaluator.js';
 import { getResponse } from './services/responder.js';
+import { createForensicLog, writeAuditLog } from './services/forensicLogger.js';
 
 dotenv.config();
 
@@ -129,7 +131,7 @@ function evaluateThreatMock(input) {
 function logSecurityEvent(event) {
   const logEntry = {
     timestamp: new Date().toISOString(),
-    event_id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    event_id: `evt_${Date.now()}_${crypto.randomUUID()}`,
     ...event
   };
   
@@ -139,6 +141,11 @@ function logSecurityEvent(event) {
   }
   
   logger.info('Security Event', logEntry);
+  
+  // Phase 3: Create tamper-evident forensic log
+  const forensicLog = createForensicLog(event);
+  writeAuditLog(forensicLog);
+  
   io.emit('security_event', logEntry);
 }
 
@@ -156,6 +163,27 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Message is required',
+        request_id: requestId
+      });
+    }
+    
+    // Phase 3: Input length validation (max 4000 characters per PRD)
+    if (message.length > 4000) {
+      logSecurityEvent({
+        event_type: 'input_validation_failed',
+        severity: 'medium',
+        source_ip: req.ip || req.socket.remoteAddress,
+        session_id: session_id || 'anonymous',
+        request_id: requestId,
+        user_input_preview: message.substring(0, 100) + '...',
+        threat_classification: 'length_violation',
+        action_taken: 'blocked',
+        details: { input_length: message.length, max_allowed: 4000 }
+      });
+      
+      return res.status(400).json({
+        success: false,
+        error: 'Message exceeds maximum length of 4000 characters',
         request_id: requestId
       });
     }
@@ -334,6 +362,43 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Phase 3: SIEM-compatible log export endpoint
+app.get('/api/logs/siem', (req, res) => {
+  const { limit = 1000, format = 'json' } = req.query;
+  
+  // SIEM-formatted logs with required fields
+  const siemLogs = securityEvents.slice(0, parseInt(limit)).map(event => ({
+    timestamp: event.timestamp,
+    event_type: event.event_type,
+    severity: event.severity,
+    src_ip: event.source_ip,
+    session_id: event.session_id,
+    request_id: event.request_id,
+    user_input: event.user_input || event.user_input_preview,
+    threat_type: event.threat_classification,
+    action: event.action_taken,
+    confidence_score: event.confidence,
+    evaluator_reason: event.evaluator_reason,
+    mock_mode: event.mock_mode
+  }));
+  
+  if (format === 'csv') {
+    // Simple CSV conversion
+    const headers = Object.keys(siemLogs[0] || {}).join(',');
+    const rows = siemLogs.map(log => Object.values(log).map(v => `"${v}"`).join(','));
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="firewall_logs.csv"');
+    res.send([headers, ...rows].join('\n'));
+  } else {
+    res.json({
+      logs: siemLogs,
+      total: siemLogs.length,
+      exported_at: new Date().toISOString(),
+      siem_format_version: '1.0'
+    });
+  }
+});
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
@@ -348,6 +413,8 @@ io.on('connection', (socket) => {
 httpServer.listen(PORT, () => {
   console.log(`🛡️  Prompt Firewall Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔒 Security logs: ./security_audit.log`);
+  console.log(`🔒 Security logs: ./logs/security_audit.json (rotating)`);
+  console.log(`📁 SIEM export: http://localhost:${PORT}/api/logs/siem`);
   console.log(`🤖 Mode: ${USE_MOCK_MODE ? 'MOCK (add GROQ_API_KEY for real LLM)' : 'LIVE (Dual-LLM Architecture)'}`);
+  console.log(`✅ Phase 3: Forensic logging & SIEM integration active`);
 });
