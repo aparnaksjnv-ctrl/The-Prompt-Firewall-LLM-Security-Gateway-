@@ -4,6 +4,7 @@ import { useSocket } from './hooks/useSocket';
 import { SecurityLog } from './components/SecurityLog';
 import { ChatInterface } from './components/ChatInterface';
 import { StatsBar } from './components/StatsBar';
+import { Logo } from './components/Logo';
 
 function App() {
   const { isConnected, securityEvents, stats, sendMessage } = useSocket();
@@ -27,8 +28,8 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="glass-card p-3 glow-blue">
-                <Shield className="w-8 h-8 text-blue-400" />
+              <div className="glass-card p-2 glow-blue">
+                <Logo size="w-12 h-12" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white terminal-text">PROMPT_FIREWALL</h1>
