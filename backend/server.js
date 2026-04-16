@@ -58,7 +58,11 @@ const securityEvents = [];
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173"
+  origin: [
+    'http://prompt-firewall-frontend-aparnaksjnv.s3-website-us-east-1.amazonaws.com',
+    'http://localhost:5173',
+    process.env.FRONTEND_URL || "http://localhost:5173"
+  ]
 }));
 
 const limiter = rateLimit({

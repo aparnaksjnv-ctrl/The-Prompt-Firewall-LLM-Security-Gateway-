@@ -192,8 +192,12 @@ export const ChatInterface = ({ onSendMessage, isLoading, lastResponse }) => {
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter command or message..."
-              className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 terminal-text"
+              placeholder={isScanning ? "Scanning for threats..." : "Enter command or message..."}
+              className={`w-full pl-10 pr-4 py-3 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 terminal-text transition-all duration-300 ${
+                isScanning 
+                  ? "border-amber-warning ring-1 ring-amber-warning placeholder-amber-warning animate-pulse" 
+                  : "border-gray-700 focus:border-cyan-400 focus:ring-cyan-400"
+              }`}
               maxLength={2000}
               disabled={isLoading || isScanning}
             />
@@ -201,14 +205,28 @@ export const ChatInterface = ({ onSendMessage, isLoading, lastResponse }) => {
           <button
             type="submit"
             disabled={isLoading || isScanning || !message.trim()}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-medium terminal-text btn-glow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-300"
+            className={`px-6 py-3 text-white rounded-lg font-medium terminal-text btn-glow disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-300 ${
+              isScanning 
+                ? "bg-gradient-to-r from-amber-warning to-orange-600 animate-pulse" 
+                : "bg-gradient-to-r from-blue-600 to-cyan-600 disabled:opacity-50"
+            }`}
           >
-            {isLoading || isScanning ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+            {isScanning ? (
+              <>
+                <Zap className="w-5 h-5 animate-pulse" />
+                <span>SCANNING</span>
+              </>
+            ) : isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>PROCESSING</span>
+              </>
             ) : (
-              <Send className="w-5 h-5" />
+              <>
+                <Send className="w-5 h-5" />
+                <span>SEND</span>
+              </>
             )}
-            <span>SEND</span>
           </button>
         </div>
         <div className="flex items-center justify-between mt-2">

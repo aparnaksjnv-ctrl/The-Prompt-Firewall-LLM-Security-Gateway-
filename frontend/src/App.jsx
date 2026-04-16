@@ -55,10 +55,16 @@ function App() {
               <div className="flex items-center gap-3">
                 {isConnected ? (
                   <div className="flex items-center gap-2">
-                    <div className="heartbeat">
-                      <Activity className="w-5 h-5 text-emerald-green" />
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-emerald-green rounded-full animate-ping opacity-20"></div>
+                      <div className="relative bg-emerald-green rounded-full p-1 animate-pulse">
+                        <Activity className="w-4 h-4 text-white" />
+                      </div>
                     </div>
-                    <span className="text-sm font-medium status-online terminal-text">SYSTEM_ONLINE</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium status-online terminal-text">LIVE</span>
+                      <span className="text-xs text-emerald-green terminal-text animate-pulse">MONITORING</span>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">

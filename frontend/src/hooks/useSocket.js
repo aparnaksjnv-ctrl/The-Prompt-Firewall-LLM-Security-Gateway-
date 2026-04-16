@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = 'http://54.158.46.238:3001';
 
 export const useSocket = () => {
   const [socket, setSocket] = useState(null);

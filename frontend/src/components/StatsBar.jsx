@@ -32,7 +32,7 @@ export const StatsBar = ({ stats, isConnected }) => {
           </div>
           
           {/* Allowed Requests */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 group relative">
             <div className="glass-card p-2 glow-emerald">
               <ShieldCheck className="w-5 h-5 text-emerald-green" />
             </div>
@@ -42,10 +42,16 @@ export const StatsBar = ({ stats, isConnected }) => {
               </div>
               <div className="text-xs text-gray-400 terminal-text">ALLOWED</div>
             </div>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-xs text-gray-300 rounded-lg border border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              <div className="font-semibold text-emerald-green mb-1">Safe Prompts</div>
+              <div>Total prompts sanitized and forwarded to LLM</div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-700"></div>
+            </div>
           </div>
           
           {/* Blocked Requests */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 group relative">
             <div className="glass-card p-2 glow-crimson">
               <ShieldAlert className="w-5 h-5 text-crimson-red" />
             </div>
@@ -55,10 +61,16 @@ export const StatsBar = ({ stats, isConnected }) => {
               </div>
               <div className="text-xs text-gray-400 terminal-text">BLOCKED</div>
             </div>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-xs text-gray-300 rounded-lg border border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              <div className="font-semibold text-crimson-red mb-1">Threats Blocked</div>
+              <div>Prompts containing malicious patterns detected</div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-700"></div>
+            </div>
           </div>
           
           {/* Total Requests */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 group relative">
             <div className="glass-card p-2 glow-blue">
               <Shield className="w-5 h-5 text-blue-400" />
             </div>
@@ -67,6 +79,12 @@ export const StatsBar = ({ stats, isConnected }) => {
                 {total.toLocaleString()}
               </div>
               <div className="text-xs text-gray-400 terminal-text">TOTAL_REQUESTS</div>
+            </div>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-xs text-gray-300 rounded-lg border border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              <div className="font-semibold text-blue-400 mb-1">Total Processed</div>
+              <div>Total prompts analyzed by the firewall</div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-700"></div>
             </div>
           </div>
         </div>

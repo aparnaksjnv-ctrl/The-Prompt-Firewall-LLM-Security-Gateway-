@@ -1,0 +1,42 @@
+{
+  "CallerReference": "prompt-firewall-frontend-aparnaksjnv",
+  "Comment": "Prompt Firewall Frontend Distribution",
+  "DefaultRootObject": "index.html",
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3-prompt-firewall-frontend-aparnaksjnv",
+        "DomainName": "prompt-firewall-frontend-aparnaksjnv.s3.us-east-1.amazonaws.com",
+        "S3OriginConfig": {
+          "OriginAccessIdentity": ""
+        },
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginProtocolPolicy": "https-only"
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-prompt-firewall-frontend-aparnaksjnv",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "TrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
+    },
+    "ForwardedValues": {
+      "QueryString": false,
+      "Cookies": {
+        "Forward": "none"
+      }
+    },
+    "MinTTL": 0
+  },
+  "CacheBehaviors": {
+    "Quantity": 0
+  },
+  "Enabled": true,
+  "PriceClass": "PriceClass_100"
+}

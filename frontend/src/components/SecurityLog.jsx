@@ -54,6 +54,29 @@ const SecurityLogItem = ({ event }) => {
     });
   };
 
+  const getLogLevel = (event) => {
+    if (event.event_type === 'threat_detected') return 'CRITICAL';
+    if (event.event_type === 'scan_completed') return 'INFO';
+    if (event.event_type === 'connection_established') return 'INFO';
+    if (event.event_type === 'message_processed') return 'INFO';
+    return 'DEBUG';
+  };
+
+  const getEventDescription = (event) => {
+    switch (event.event_type) {
+      case 'threat_detected':
+        return `THREAT_BLOCKED: ${event.threat_classification?.toUpperCase() || 'UNKNOWN'} - ${event.evaluator_reason || 'Suspicious pattern detected'}`;
+      case 'scan_completed':
+        return `SCANNING: Analyzing prompt for injection patterns...`;
+      case 'connection_established':
+        return `CONNECTION: New client session established`;
+      case 'message_processed':
+        return `PROCESSED: Prompt sanitized and forwarded to LLM`;
+      default:
+        return `MONITORING: Security checkpoint passed`;
+    }
+  };
+
   const shouldFlash = event.event_type === 'threat_detected' && 
                       (Date.now() - new Date(event.timestamp).getTime()) < 3000;
 
@@ -66,18 +89,10 @@ const SecurityLogItem = ({ event }) => {
           {getThreatIcon(event.threat_classification, event.severity)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="font-semibold text-sm text-cyan-400 uppercase tracking-wider">
-              [{event.event_type?.replace(/_/g, '_')}]
+          <div className="mb-2">
+            <span className="text-sm font-mono text-gray-300">
+              [{formatTime(event.timestamp)}] [{getLogLevel(event)}] [{event.event_type?.replace(/_/g, '_').toUpperCase()}] - {getEventDescription(event)}
             </span>
-            <span className="text-xs text-gray-400 font-mono">
-              {formatTime(event.timestamp)}
-            </span>
-            {event.confidence && (
-              <span className="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-300">
-                CONF: {(event.confidence * 100).toFixed(0)}%
-              </span>
-            )}
           </div>
           
           {event.user_input_preview && (
@@ -99,6 +114,11 @@ const SecurityLogItem = ({ event }) => {
           )}
           
           <div className="flex items-center gap-4 text-xs text-gray-500">
+            {event.confidence && (
+              <span className="px-2 py-1 rounded-full bg-gray-800 text-gray-300">
+                CONF: {(event.confidence * 100).toFixed(0)}%
+              </span>
+            )}
             {event.session_id && (
               <span>SESSION: {event.session_id.substring(0, 8)}...</span>
             )}
@@ -136,15 +156,23 @@ export const SecurityLog = ({ events }) => {
       
       <div className="overflow-y-auto max-h-[calc(100vh-350px)] p-4 space-y-0">
         {events.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <div className="relative mb-4">
-              <ShieldCheck className="w-16 h-16 mx-auto text-emerald-green" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 bg-emerald-green/20 rounded-full animate-ping"></div>
-              </div>
+          <div className="text-center py-12 text-gray-500 relative">
+            {/* Shield Watermark Background */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-5">
+              <Shield className="w-64 h-64 text-emerald-green" />
             </div>
-            <p className="text-lg font-medium text-gray-300 terminal-text mb-2">NO_EVENTS_DETECTED</p>
-            <p className="text-sm text-gray-500 terminal-text">System monitoring active...</p>
+            
+            {/* Foreground Content */}
+            <div className="relative z-10">
+              <div className="relative mb-4">
+                <ShieldCheck className="w-16 h-16 mx-auto text-emerald-green" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-emerald-green/20 rounded-full animate-ping"></div>
+                </div>
+              </div>
+              <p className="text-lg font-medium text-gray-300 terminal-text mb-2">NO_EVENTS_DETECTED</p>
+              <p className="text-sm text-gray-500 terminal-text">System monitoring active...</p>
+            </div>
           </div>
         ) : (
           events.map((event, index) => (
