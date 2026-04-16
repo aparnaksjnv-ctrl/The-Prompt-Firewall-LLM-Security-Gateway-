@@ -1,15 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Deep Midnight Theme Colors */
+  --bg-primary: #0A0E14;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1F2937;
+  --border-color: rgba(59, 130, 246, 0.2);
+  
+  /* High-Contrast Accent Colors */
+  --emerald-green: #10FF59;
+  --crimson-red: #FF1744;
+  --electric-blue: #00D4FF;
+  --amber-warning: #FFB800;
+  
+  /* Glassmorphism */
+  --glass-bg: rgba(17, 24, 39, 0.7);
+  --glass-border: rgba(59, 130, 246, 0.3);
+  
+  /* Typography */
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: #E5E7EB;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Cybersecurity Background Effects */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Scan Line Effect */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.scanline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--electric-blue), transparent);
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Glow Effects */
+.glow-emerald {
+  box-shadow: 0 0 20px rgba(16, 255, 89, 0.3);
+}
+
+.glow-crimson {
+  box-shadow: 0 0 20px rgba(255, 23, 68, 0.3);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Button Glow on Hover */
+.btn-glow:hover {
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
+
+/* Terminal Text */
+.terminal-text {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* Threat Flash Animation */
+@keyframes threat-flash {
+  0%, 100% { background-color: rgba(255, 23, 68, 0.1); }
+  50% { background-color: rgba(255, 23, 68, 0.3); }
+}
+
+.threat-flash {
+  animation: threat-flash 0.6s ease-in-out 3;
+}
+
+/* Heartbeat Animation */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.heartbeat {
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+/* Radar Scan Animation */
+@keyframes radar-scan {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.radar-scan {
+  animation: radar-scan 3s linear infinite;
+}
+
+/* Scanning Animation */
+@keyframes scanning {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+.scanning {
+  animation: scanning 1.5s ease-in-out infinite;
+}
+
+/* Threat Level Gauge */
+.threat-gauge {
+  background: linear-gradient(to top, 
+    var(--emerald-green) 0%, 
+    var(--amber-warning) 50%, 
+    var(--crimson-red) 100%);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.threat-gauge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    transparent 30%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    transparent 70%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Console Chat Bubbles */
+.console-user {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-left: 3px solid var(--electric-blue);
+}
+
+.console-system {
+  background: linear-gradient(135deg, rgba(16, 255, 89, 0.1), rgba(16, 255, 89, 0.05));
+  border: 1px solid rgba(16, 255, 89, 0.3);
+  border-left: 3px solid var(--emerald-green);
+}
+
+.console-error {
+  background: linear-gradient(135deg, rgba(255, 23, 68, 0.1), rgba(255, 23, 68, 0.05));
+  border: 1px solid rgba(255, 23, 68, 0.3);
+  border-left: 3px solid var(--crimson-red);
+}
+
+/* Status Indicators */
+.status-online {
+  color: var(--emerald-green);
+  text-shadow: 0 0 10px rgba(16, 255, 89, 0.5);
+}
+
+.status-offline {
+  color: var(--crimson-red);
+  text-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--electric-blue);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--emerald-green);
+}
+
+/* Main Content Container */
+.main-container {
+  position: relative;
+  z-index: 10;
   min-height: 100vh;
 }

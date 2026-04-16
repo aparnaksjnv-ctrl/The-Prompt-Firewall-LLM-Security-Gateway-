@@ -1,4 +1,4 @@
-import { Shield, ShieldCheck, ShieldAlert, Activity } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldAlert, Activity, Radar, ShieldX } from 'lucide-react';
 
 export const StatsBar = ({ stats, isConnected }) => {
   const total = stats.totalRequests || 0;
@@ -7,41 +7,88 @@ export const StatsBar = ({ stats, isConnected }) => {
   const protectionRate = total > 0 ? ((blocked / total) * 100).toFixed(1) : 0;
 
   return (
-    <div className="bg-gray-900 text-white p-4 rounded-lg shadow-lg">
+    <div className="glass-card p-6 border-0">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Activity className={`w-5 h-5 ${isConnected ? 'text-green-400' : 'text-red-400'}`} />
-            <span className="text-sm font-medium">
-              {isConnected ? 'System Online' : 'Disconnected'}
-            </span>
+        <div className="flex items-center gap-8">
+          {/* System Status with Radar Animation */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              {isConnected ? (
+                <div className="radar-scan">
+                  <Radar className="w-6 h-6 text-emerald-green" />
+                </div>
+              ) : (
+                <ShieldX className="w-6 h-6 text-crimson-red" />
+              )}
+            </div>
+            <div>
+              <span className={`text-sm font-bold terminal-text ${isConnected ? 'status-online' : 'status-offline'}`}>
+                {isConnected ? 'SYSTEM_ONLINE' : 'SYSTEM_OFFLINE'}
+              </span>
+              <div className="text-xs text-gray-400 terminal-text">
+                {isConnected ? 'MONITORING_ACTIVE' : 'CONNECTION_LOST'}
+              </div>
+            </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-green-400" />
-            <span className="text-sm">
-              <strong>{allowed.toLocaleString()}</strong> Allowed
-            </span>
+          {/* Allowed Requests */}
+          <div className="flex items-center gap-3">
+            <div className="glass-card p-2 glow-emerald">
+              <ShieldCheck className="w-5 h-5 text-emerald-green" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-emerald-green terminal-text">
+                {allowed.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-400 terminal-text">ALLOWED</div>
+            </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-red-400" />
-            <span className="text-sm">
-              <strong>{blocked.toLocaleString()}</strong> Blocked
-            </span>
+          {/* Blocked Requests */}
+          <div className="flex items-center gap-3">
+            <div className="glass-card p-2 glow-crimson">
+              <ShieldAlert className="w-5 h-5 text-crimson-red" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-crimson-red terminal-text">
+                {blocked.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-400 terminal-text">BLOCKED</div>
+            </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-blue-400" />
-            <span className="text-sm">
-              <strong>{total.toLocaleString()}</strong> Total
-            </span>
+          {/* Total Requests */}
+          <div className="flex items-center gap-3">
+            <div className="glass-card p-2 glow-blue">
+              <Shield className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <div className="text-lg font-bold text-blue-400 terminal-text">
+                {total.toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-400 terminal-text">TOTAL_REQUESTS</div>
+            </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 bg-blue-600 px-4 py-2 rounded-full">
-          <span className="text-sm font-bold">{protectionRate}%</span>
-          <span className="text-xs">Threats Blocked</span>
+        {/* Protection Rate with Dynamic Color */}
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className={`text-2xl font-bold terminal-text ${
+              parseFloat(protectionRate) > 20 ? 'text-crimson-red' :
+              parseFloat(protectionRate) > 10 ? 'text-amber-warning' :
+              'text-emerald-green'
+            }`}>
+              {protectionRate}%
+            </div>
+            <div className="text-xs text-gray-400 terminal-text">THREATS_BLOCKED</div>
+          </div>
+          <div className="w-3 h-16 threat-gauge relative">
+            <div 
+              className="absolute bottom-0 w-full bg-white transition-all duration-700"
+              style={{ height: `${Math.min(parseFloat(protectionRate), 100)}%` }}
+            />
+          </div>
         </div>
       </div>
     </div>
