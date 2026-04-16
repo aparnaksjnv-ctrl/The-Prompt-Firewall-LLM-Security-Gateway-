@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="faviconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#00D4FF"/>
+      <stop offset="50%" stopColor="#10FF59"/>
+      <stop offset="100%" stopColor="#00D4FF"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Shield Background -->
+  <path d="M16 3 L27 8 L27 20 Q27 26 16 30 Q5 26 5 20 L5 8 Z" 
+        fill="url(#faviconGradient)" 
+        stroke="#0A0E14" 
+        stroke-width="1"/>
+  
+  <!-- Inner Shield -->
+  <path d="M16 6 L24 10 L24 19 Q24 23 16 26 Q8 23 8 19 L8 10 Z" 
+        fill="#0A0E14" 
+        stroke="#10FF59" 
+        stroke-width="0.5"/>
+  
+  <!-- PF Text -->
+  <text x="16" y="18" 
+        font-family="monospace" 
+        font-size="8" 
+        font-weight="bold"
+        fill="#10FF59" 
+        text-anchor="middle">PF</text>
+  
+  <!-- Lock Icon -->
+  <rect x="13" y="22" width="6" height="4" 
+        fill="none" 
+        stroke="#FF1744" 
+        stroke-width="0.5" 
+        rx="0.5"/>
+  <circle cx="16" cy="24" r="0.5" fill="#FF1744"/>
+</svg>
