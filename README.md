@@ -437,7 +437,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 **Aparna KSNV**
 - GitHub: [@aparnaksjnv-ctrl](https://github.com/aparnaksjnv-ctrl)
-- LinkedIn: [Your LinkedIn](www.linkedin.com/in/aparna-kallayil-sajeev-)
+- LinkedIn: https://www.linkedin.com/in/aparna-kallayil-sajeev-/
 
 ---
 
